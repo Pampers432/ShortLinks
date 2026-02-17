@@ -1,0 +1,29 @@
+﻿@model ShortLinks.Models.ShortLink
+
+@{
+    ViewData["Title"] = "Добавить ссылку";
+}
+
+<h2 class="mb-4">Добавить новую ссылку</h2>
+
+<form asp-action="Create" method="post">
+    <div class="mb-3">
+        <label class="form-label">Длинный URL</label>
+        <input asp-for="LongUrl" class="form-control" />
+        <span asp-validation-for="LongUrl" class="text-danger"></span>
+    </div>
+
+    <button type="submit" class="btn btn-success">
+        Сохранить
+    </button>
+
+    <a asp-action="Index" class="btn btn-secondary">
+        Назад
+    </a>
+</form>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

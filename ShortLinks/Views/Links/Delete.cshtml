@@ -1,0 +1,23 @@
+﻿@model ShortLinks.Models.ShortLink
+
+@{
+    ViewData["Title"] = "Удаление";
+}
+
+<h2 class="mb-4 text-danger">Удалить ссылку?</h2>
+
+<div class="mb-3">
+    <strong>URL:</strong> @Model.LongUrl
+</div>
+
+<form asp-action="Delete" method="post">
+    <input type="hidden" asp-for="Id" />
+
+    <button type="submit" class="btn btn-danger">
+        Удалить
+    </button>
+
+    <a asp-action="Index" class="btn btn-secondary">
+        Отмена
+    </a>
+</form>

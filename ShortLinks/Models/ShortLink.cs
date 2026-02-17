@@ -6,12 +6,11 @@ namespace ShortLinks.Models
     {
         public int Id { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "Введите URL")]
         [MaxLength(2048)]
+        [Url(ErrorMessage = "Введите корректный URL (http или https)")]
         public string LongUrl { get; set; } = string.Empty;
 
-        [Required]
-        [MaxLength(20)]
         public string Code { get; set; } = string.Empty;
 
         public DateTime CreatedAt { get; set; }

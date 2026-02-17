@@ -1,0 +1,81 @@
+﻿@model IEnumerable<ShortLinks.Models.ShortLink>
+
+@{
+    ViewData["Title"] = "Список ссылок";
+}
+
+<h2 class="mb-4">Сокращённые ссылки</h2>
+
+<div class="mb-3">
+    <a asp-action="Create" class="btn btn-primary">
+        Добавить ссылку
+    </a>
+</div>
+
+<table class="table table-bordered table-striped">
+    <thead class="table-dark">
+        <tr>
+            <th>Длинный URL</th>
+            <th>Сокращенный URL</th>
+            <th>Дата создания</th>
+            <th>Количество переходов</th>
+            <th>Управление</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (!Model.Any())
+        {
+            <tr>
+                <td colspan="5" class="text-center">
+                    Ссылок пока нет
+                </td>
+            </tr>
+        }
+        else
+        {
+            foreach (var item in Model)
+            {
+                <tr>
+                    <!-- Длинный URL -->
+                    <td>
+                        <a href="@item.LongUrl" target="_blank">
+                            @item.LongUrl
+                        </a>
+                    </td>
+
+                    <!-- Сокращенный URL -->
+                    <td>
+                        <a href="/@item.Code" target="_blank">
+                            @($"{Context.Request.Scheme}://{Context.Request.Host}/{item.Code}")
+                        </a>
+                    </td>
+
+                    <!-- Дата создания -->
+                    <td>
+                        @item.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")
+                    </td>
+
+                    <!-- Количество переходов -->
+                    <td>
+                        @item.ClickCount
+                    </td>
+
+                    <!-- Управление -->
+                    <td>
+                        <a asp-action="Edit"
+                           asp-route-id="@item.Id"
+                           class="btn btn-sm btn-warning">
+                            Редактировать
+                        </a>
+
+                        <a asp-action="Delete"
+                           asp-route-id="@item.Id"
+                           class="btn btn-sm btn-danger">
+                            Удалить
+                        </a>
+                    </td>
+                </tr>
+            }
+        }
+    </tbody>
+</table>

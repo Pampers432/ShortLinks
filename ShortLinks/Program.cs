@@ -38,9 +38,15 @@ namespace ShortLinks
             }
 
             app.MapStaticAssets();
+
+            app.MapControllerRoute(
+                name: "shortlink",
+                pattern: "{code}",
+                defaults: new { controller = "Links", action = "RedirectToLongUrl" });
+
             app.MapControllerRoute(
                 name: "default",
-                pattern: "{controller=Home}/{action=Index}/{id?}")
+                pattern: "{controller=Links}/{action=Index}/{id?}")
                 .WithStaticAssets();
 
             app.Run();
