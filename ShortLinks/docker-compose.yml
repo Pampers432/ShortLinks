@@ -1,0 +1,12 @@
+﻿version: "3.9"
+
+services:
+  shortlinks:
+    build: .
+    container_name: shortlinks-app
+    ports:
+      - "8080:8080"
+    environment:
+      # Вставь сюда свою строку подключения
+      ConnectionStrings__DefaultConnection: "server=host.docker.internal;port=3306;database=ShortLinksDb;user=root;password=1234;Pooling=true;MaximumPoolSize=50;"
+    restart: unless-stopped
