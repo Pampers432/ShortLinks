@@ -49,8 +49,8 @@ namespace ShortLinks.Controllers
 
             model.Code = GenerateCode();
 
-            // Проверяем коллизию:
-            // теоретически одинаковый код может быть сгенерирован повторно.
+            // Проверяем коллизию,
+            // т.к. теоретически одинаковый код может быть сгенерирован повторно.
             while (await _context.ShortLinks.AnyAsync(x => x.Code == model.Code))
             {
                 model.Code = GenerateCode();
@@ -133,7 +133,6 @@ namespace ShortLinks.Controllers
 
                 originalUrl = link.LongUrl;
 
-                // Кэшируем на 10 минут
                 _cache.Set(code, originalUrl,
                     new MemoryCacheEntryOptions
                     {
