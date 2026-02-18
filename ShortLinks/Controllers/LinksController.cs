@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using ShortLinks.Data;
 using ShortLinks.Models;
 using System.Diagnostics;
@@ -11,16 +12,19 @@ namespace ShortLinks.Controllers
     public class LinksController : Controller
     {
         private readonly AppDbContext _context;
+        private readonly IMemoryCache _cache;
 
-        public LinksController(AppDbContext context)
+        public LinksController(AppDbContext context, IMemoryCache cache)
         {
             _context = context;
+            _cache = cache;
         }
 
         public async Task<IActionResult> Index()
         {
             var links = await _context.ShortLinks
                 .OrderByDescending(x => x.CreatedAt)
+                .AsNoTracking()
                 .ToListAsync();
 
             return View(links);
@@ -43,7 +47,15 @@ namespace ShortLinks.Controllers
             if (!ModelState.IsValid)
                 return View(model);
 
-            model.Code = await GenerateUniqueCodeAsync();
+            model.Code = GenerateCode();
+
+            // Проверяем коллизию:
+            // теоретически одинаковый код может быть сгенерирован повторно.
+            while (await _context.ShortLinks.AnyAsync(x => x.Code == model.Code))
+            {
+                model.Code = GenerateCode();
+            }
+
             model.CreatedAt = DateTime.UtcNow;
             model.ClickCount = 0;
 
@@ -110,40 +122,47 @@ namespace ShortLinks.Controllers
 
         public async Task<IActionResult> RedirectToLongUrl(string code)
         {
-            var link = await _context.ShortLinks
-                .FirstOrDefaultAsync(x => x.Code == code);
+            if (!_cache.TryGetValue(code, out string originalUrl))
+            {
+                var link = await _context.ShortLinks
+                    .AsNoTracking() // Не отслеживаем, т.к. только читаем
+                    .FirstOrDefaultAsync(x => x.Code == code);
 
-            if (link == null)
-                return NotFound();
+                if (link == null)
+                    return NotFound();
 
-            link.ClickCount++;
-            await _context.SaveChangesAsync();
+                originalUrl = link.LongUrl;
 
-            return Redirect(link.LongUrl);
+                // Кэшируем на 10 минут
+                _cache.Set(code, originalUrl,
+                    new MemoryCacheEntryOptions
+                    {
+                        AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10)
+                    });
+            }
+
+            await IncrementClickCount(code);
+
+            return Redirect(originalUrl);
         }
 
-        private async Task<string> GenerateUniqueCodeAsync(int length = 8)
+        //не загружается объект, нет трекинга EF, один SQL-запрос
+        private async Task IncrementClickCount(string shortCode)
+        {
+            await _context.Database.ExecuteSqlRawAsync(
+                "UPDATE ShortLinks SET ClickCount = ClickCount + 1 WHERE Code = {0}",
+                shortCode);
+        }
+
+        private string GenerateCode()
         {
             const string chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            var random = new Random();
 
-            while (true)
-            {
-                var bytes = RandomNumberGenerator.GetBytes(length);
-                var code = new StringBuilder(length);
-
-                foreach (var b in bytes)
-                {
-                    code.Append(chars[b % chars.Length]);
-                }
-
-                string finalCode = code.ToString();
-
-                bool exists = await _context.ShortLinks
-                    .AnyAsync(x => x.Code == finalCode);
-
-                if (!exists)
-                    return finalCode;
-            }
+            // Даёт короткий, контролируемый и равномерно случайный код,
+            // что отлично подходит для тестового решения
+            return new string(Enumerable.Repeat(chars, 6)
+                .Select(s => s[random.Next(s.Length)]).ToArray());
         }
 
         private bool IsValidHttpUrl(string url)

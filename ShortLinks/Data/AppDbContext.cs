@@ -12,6 +12,8 @@ namespace ShortLinks.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            // ShortCode уникальный, т.к. это публичный идентификатор ссылки.
+            // Если не задать уникальность — возможны коллизии и редиректы на неправильные URL.
             modelBuilder.Entity<ShortLink>()
                 .HasIndex(s => s.Code)
                 .IsUnique();
